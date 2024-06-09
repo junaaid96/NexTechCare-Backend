@@ -22,6 +22,12 @@ class ReviewListCreateView(generics.ListCreateAPIView):
             return ReviewCreateSerializer
         return ReviewSerializer
 
+    def list(self, request, pk):
+        service = Service.objects.get(pk=pk)
+        reviews = Review.objects.filter(service=service)
+        serializer = self.get_serializer(reviews, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def create(self, request, pk):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
