@@ -6,7 +6,7 @@ class Service(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
     price = models.DecimalField(max_digits=5, decimal_places=2)
-    duration = models.DurationField()
+    duration = models.PositiveIntegerField()
     review_text = models.TextField(blank=True)
     engineer = models.ForeignKey(EngineerProfile, on_delete=models.CASCADE)
     admin_approved = models.BooleanField(default=False)
