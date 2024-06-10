@@ -5,12 +5,27 @@ from nextechcare_drf.permissions import IsEngineer, IsCustomer
 from .models import Service
 from .serializers import ServiceSerializer, ServiceCreateUpdateSerializer
 from profiles.models import EngineerProfile, CustomerProfile
+from rest_framework import filters
 
 
 # GET and POST requests for the retrieval and creation of Service instances.
+# pagination will be added late.
 class ServiceListCreateView(generics.ListCreateAPIView):
-    queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name', 'description',
+                     'engineer__user__first_name', 'engineer__user__last_name']
+
+    def get_queryset(self):
+        queryset = Service.objects.all()
+        engineer = self.request.query_params.get('engineer')
+        customer = self.request.query_params.get('customer')
+
+        if engineer:
+            queryset = queryset.filter(engineer__user__username=engineer)
+        if customer:
+            queryset = queryset.filter(customer__user__username=customer)
+        return queryset
 
     def get_permissions(self):
         if self.request.method == 'GET':
