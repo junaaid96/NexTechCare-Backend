@@ -20,11 +20,14 @@ class ServiceListCreateView(generics.ListCreateAPIView):
         queryset = Service.objects.all()
         engineer = self.request.query_params.get('engineer')
         customer = self.request.query_params.get('customer')
+        admin_approved = self.request.query_params.get('admin_approved')
 
         if engineer:
             queryset = queryset.filter(engineer__user__username=engineer)
         if customer:
             queryset = queryset.filter(customer__user__username=customer)
+        if admin_approved:
+            queryset = queryset.filter(admin_approved=admin_approved)
         return queryset
 
     def get_permissions(self):
