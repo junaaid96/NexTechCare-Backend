@@ -1,7 +1,5 @@
 from rest_framework import serializers
 from .models import User, AdminProfile, CustomerProfile, EngineerProfile
-# from django.contrib.auth import authenticate
-# from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -123,26 +121,3 @@ class EngineerProfileUpdateSerializer(serializers.ModelSerializer):
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
-
-    # def validate(self, data):
-    #     username = data.get('username')
-    #     password = data.get('password')
-
-    #     try:
-    #         user = User.objects.get(username=data['username'])
-    #     except User.DoesNotExist:
-    #         raise serializers.ValidationError("User not found")
-
-    #     if not user.is_active:
-    #         raise serializers.ValidationError("Please activate your account before login")
-
-    #     user = authenticate(username=username, password=password)
-    #     if user:
-    #         data['refresh'] = str(RefreshToken.for_user(user))
-    #         data['access'] = str(AccessToken.for_user(user))
-    #         data['user_id'] = user.id
-    #         data['user_type'] = user.user_type
-    #     else:
-    #         raise serializers.ValidationError("Incorrect credentials")
-
-    #     return data
