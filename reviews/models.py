@@ -6,7 +6,8 @@ RATING_CHOICES = [(i, i) for i in range(1, 11)]
 
 
 class Review(models.Model):
-    customer = models.ForeignKey(CustomerProfile, on_delete=models.CASCADE, null=True)
+    customer = models.ForeignKey(
+        CustomerProfile, on_delete=models.CASCADE, null=True)
     service = models.ForeignKey(
         Service, on_delete=models.CASCADE, related_name='reviews')
     rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES)
@@ -15,3 +16,6 @@ class Review(models.Model):
 
     def __str__(self):
         return f'{self.customer.user.username} - {self.service.name} - {self.rating}'
+
+    class Meta:
+        ordering = ['-created_at']
