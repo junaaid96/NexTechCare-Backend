@@ -47,7 +47,7 @@ class ServiceListCreateView(generics.ListCreateAPIView):
             serializer.save(
                 engineer=EngineerProfile.objects.get(user=request.user))
             Activity.objects.create(
-                name=f'{request.user.first_name} {request.user.last_name} created a service named {serializer.validated_data.get("name")}!')
+                name=f'{request.user.first_name} {request.user.last_name} created a service named {serializer.validated_data.get("name")} and pending for admin approval!')
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
