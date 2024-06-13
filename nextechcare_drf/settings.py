@@ -32,10 +32,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-DATABASES = {}  # Prevent Django from loading an adapter
-
 CSRF_TRUSTED_ORIGINS = [
-    'https://nextechcare-backend.onrender.com', 'https://*.127.0.0.1', 'https://*.vercel.app', 'https://*.now.sh']
+    'https://nextechcare-backend.onrender.com', 'https://*.127.0.0.1', 'https://*.vercel.app']
 
 # Application definition
 
@@ -196,9 +194,3 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
-
-import os
-STATICFILES_DIRS = os.path.join(BASE_DIR, 'static')
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build', 'static')
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
