@@ -32,8 +32,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+DATABASES = {} # Prevent Django from loading an adapter
+
 CSRF_TRUSTED_ORIGINS = [
-    'https://nextechcare-backend.onrender.com', 'https://*.127.0.0.1']
+    'https://nextechcare-backend.onrender.com', 'https://*.127.0.0.1', 'https://*.vercel.app']
 
 # Application definition
 
