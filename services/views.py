@@ -69,10 +69,13 @@ class ServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        engineer = EngineerProfile.objects.get(user=request.user)
+
         service = self.get_object()
-        service.engineer = engineer
+        engineer = EngineerProfile.objects.get(user=request.user)
+        if service.engineer != engineer:
+            return Response({'error': 'You are not allowed to update this service!'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer.is_valid(raise_exception=True)
         service.name = serializer.validated_data.get('name', service.name)
         service.description = serializer.validated_data.get(
             'description', service.description)
@@ -83,6 +86,18 @@ class ServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
         Activity.objects.create(
             name=f'{engineer.user.first_name} {engineer.user.last_name} updated a service named {service.name}!')
         return Response(ServiceSerializer(service).data, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        service = self.get_object()
+        engineer = EngineerProfile.objects.get(user=request.user)
+
+        if service.engineer != engineer:
+            return Response({'error': 'You are not allowed to delete this service!'}, status=status.HTTP_403_FORBIDDEN)
+
+        service.delete()
+        Activity.objects.create(
+            name=f'{request.user.first_name} {request.user.last_name} deleted a service named {service.name}!')
+        return Response({'success': 'Service deleted successfully!'}, status=status.HTTP_200_OK)
 
 
 class ServiceTakenCreateView(generics.CreateAPIView):
