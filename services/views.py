@@ -1,8 +1,9 @@
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework import status
-from nextechcare_drf.permissions import IsEngineer, IsCustomer
+from nextechcare_drf.permissions import IsEngineer, IsCustomer, IsCustomAdmin
 from .models import Service
+from activities.models import Activity
 from .serializers import ServiceSerializer, ServiceCreateUpdateSerializer
 from profiles.models import EngineerProfile, CustomerProfile
 from rest_framework import filters
@@ -45,6 +46,8 @@ class ServiceListCreateView(generics.ListCreateAPIView):
         if serializer.is_valid():
             serializer.save(
                 engineer=EngineerProfile.objects.get(user=request.user))
+            Activity.objects.create(
+                name=f'{request.user.first_name} {request.user.last_name} created a service named {serializer.validated_data.get("name")}!')
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -77,6 +80,8 @@ class ServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
         service.duration = serializer.validated_data.get(
             'duration', service.duration)
         service.save()
+        Activity.objects.create(
+            name=f'{engineer.user.first_name} {engineer.user.last_name} updated a service named {service.name}!')
         return Response(ServiceSerializer(service).data, status=status.HTTP_200_OK)
 
 
@@ -91,4 +96,21 @@ class ServiceTakenCreateView(generics.CreateAPIView):
         if service.customer.filter(user=request.user).exists():
             return Response({'error': 'Service already taken!'}, status=status.HTTP_400_BAD_REQUEST)
         service.customer.add(customer)
+        service.save()
+        Activity.objects.create(
+            name=f'{customer.user.first_name} {customer.user.last_name} took a service named {service.name}!')
         return Response({'success': 'Service taken successfully!'}, status=status.HTTP_200_OK)
+
+
+class ServiceApprovedCreateView(generics.CreateAPIView):
+    queryset = Service.objects.all()
+    serializer_class = ServiceSerializer
+    permission_classes = [IsCustomAdmin]
+
+    def create(self, request, pk):
+        service = Service.objects.get(pk=pk)
+        service.admin_approved = True
+        service.save()
+        Activity.objects.create(
+            name=f'{request.user.first_name} {request.user.last_name} approved a service named {service.name}!')
+        return Response({'success': 'Service approved successfully!'}, status=status.HTTP_200_OK)

@@ -2,6 +2,7 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Review
+from activities.models import Activity
 from services.models import Service
 from .serializers import ReviewSerializer, ReviewCreateSerializer
 from profiles.models import CustomerProfile
@@ -39,4 +40,6 @@ class ReviewListCreateView(generics.ListCreateAPIView):
             return Response({'error': 'You have already reviewed this service.'}, status=status.HTTP_400_BAD_REQUEST)
         Review.objects.create(
             customer=customer, service=service, **serializer.validated_data)
+        Activity.objects.create(
+            name=f'{customer.user.first_name} {customer.user.last_name} reviewed {service.name}')
         return Response({'success': 'Review created successfully.'}, status=status.HTTP_201_CREATED)

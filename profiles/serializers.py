@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User, AdminProfile, CustomerProfile, EngineerProfile
+from activities.models import Activity
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -57,8 +58,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         if user_type == 'C':
             CustomerProfile.objects.create(user=user)
+            Activity.objects.create(
+                name=f'a customer named {user.first_name} {user.last_name} created a new account!')
         elif user_type == 'E':
             EngineerProfile.objects.create(user=user)
+            Activity.objects.create(
+                name=f'an engineer named {user.first_name} {user.last_name} created a new account!')
 
         return user
 
