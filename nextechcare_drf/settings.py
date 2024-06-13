@@ -33,7 +33,7 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://nextechcare-backend.onrender.com', 'https://*.127.0.0.1', 'https://*.vercel.app']
+    'https://nextechcare-backend.onrender.com', 'https://*.127.0.0.1']
 
 # Application definition
 
@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
-    "whitenoise.runserver_nostatic",  # for railway deployment
+    # "whitenoise.runserver_nostatic",  # for railway deployment
     'profiles',
     'services',
     'reviews',
@@ -63,7 +63,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # for railway deployment
+    # "whitenoise.middleware.WhiteNoiseMiddleware",  # for railway deployment
 ]
 
 ROOT_URLCONF = 'nextechcare_drf.urls'
@@ -149,7 +149,7 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # for railway deployment
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # media files
 MEDIA_URL = '/media/'
