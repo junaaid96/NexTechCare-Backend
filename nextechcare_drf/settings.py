@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    "whitenoise.runserver_nostatic",  # for railway deployment
     'profiles',
     'services',
     'reviews',
@@ -62,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # for railway deployment
 ]
 
 ROOT_URLCONF = 'nextechcare_drf.urls'
@@ -144,6 +146,10 @@ STATIC_URL = 'static/'
 # STATICFILES_DIRS = [
 #     BASE_DIR / "static",
 # ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# for railway deployment
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # media files
 MEDIA_URL = '/media/'
