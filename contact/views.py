@@ -1,7 +1,7 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Contact
+from .models import ContactText
 from .serializers import ContactTextSerializer
 
 
@@ -16,5 +16,5 @@ class ContactTextCreateView(generics.CreateAPIView):
 
 
 class ContactTextListView(generics.ListAPIView):
-    queryset = Contact.objects.all()
+    queryset = ContactText.objects.all()
     serializer_class = ContactTextSerializer
