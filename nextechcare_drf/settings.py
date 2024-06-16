@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import environ
+import dj_database_url
 
 env = environ.Env()
 environ.Env.read_env()
@@ -101,11 +102,21 @@ WSGI_APPLICATION = 'nextechcare_drf.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+# railway postgreSQL DB
+db_user = env('DB_USER')
+db_pass = env('DB_PASS')
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"postgres://{db_user}:{db_pass}@monorail.proxy.rlwy.net:34013/railway",
+    )
 }
 
 
