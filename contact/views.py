@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import ContactText
 from .serializers import ContactTextSerializer
+from nextechcare_drf.permissions import IsCustomAdmin
 
 
 class ContactTextCreateView(generics.CreateAPIView):
@@ -18,3 +19,4 @@ class ContactTextCreateView(generics.CreateAPIView):
 class ContactTextListView(generics.ListAPIView):
     queryset = ContactText.objects.all()
     serializer_class = ContactTextSerializer
+    permission_classes = [IsCustomAdmin]
