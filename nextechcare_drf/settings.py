@@ -115,7 +115,7 @@ db_pass = env('DB_PASS')
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"postgres://{db_user}:{db_pass}@monorail.proxy.rlwy.net:34013/railway",
+        default=f"postgresql://{db_user}:{db_pass}@ep-damp-butterfly-a1x2ao8a-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
     )
 }
 
