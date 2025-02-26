@@ -2,6 +2,12 @@
 
 A Django REST Framework based backend service for NexTechCare, providing various endpoints for user management, services, reviews, and more.
 
+## Live Links
+
+- Backend API: https://nextechcare-backend.onrender.com/
+- Frontend Application: https://nextechcare.netlify.app/
+- Frontend Repository: https://github.com/junaaid96/NexTechCare-Frontend
+
 ## Tech Stack
 
 - Django 4.2.7
