@@ -81,7 +81,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
-    'DEFAULT_THROTTLE_RATES': {'triage': '20/hour'},
+    'DEFAULT_THROTTLE_RATES': {'triage': '20/hour', 'demo_login': '30/hour'},
 }
 
 AUTH_USER_MODEL = 'profiles.User'
@@ -126,6 +126,7 @@ DATABASES = {
 }
 
 GROQ_API_KEY = env('GROQ_API_KEY', default='')
+CRON_SECRET = env('CRON_SECRET', default='')
 GROQ_MODEL = env('GROQ_MODEL', default='openai/gpt-oss-120b')
 
 

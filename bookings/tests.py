@@ -99,3 +99,51 @@ class TriageTests(TestCase):
             r = APIClient().post('/triage/', {'description': 'suspicious emails everywhere'})
         self.assertEqual(r.data['source'], 'ai')
         self.assertEqual(r.data['recommended_service_ids'], [self.svc.pk])
+
+
+class DemoTests(TestCase):
+    def setUp(self):
+        from django.core.management import call_command
+        call_command('seed_demo', verbosity=0)
+        self.c = APIClient()
+        real = make_user('realeng', 'E'); self.real_eng = EngineerProfile.objects.create(user=real)
+        self.real_pending = Service.objects.create(name='Real', description='x', price=1, duration=1, engineer=self.real_eng)
+
+    def demo(self, role):
+        r = self.c.post('/profiles/demo-login/', {'role': role})
+        self.assertEqual(r.status_code, 200)
+        self.c.credentials(HTTP_AUTHORIZATION='Bearer ' + r.data['access'])
+
+    def test_reset_is_idempotent(self):
+        from django.core.management import call_command
+        call_command('seed_demo', verbosity=0)
+        self.assertEqual(User.objects.filter(username='demo_customer').count(), 1)
+        self.assertFalse(User.objects.get(username='demo_customer').has_usable_password())
+
+    def test_demo_admin_is_scoped(self):
+        self.demo('A')
+        names = [p['user']['username'] for p in self.c.get('/profiles/engineers/').data]
+        self.assertNotIn('realeng', names)
+        self.assertEqual(self.c.post(f'/profiles/engineers/{self.real_eng.pk}/verify/').status_code, 403)
+        self.assertEqual(self.c.post('/services/approved/bulk/', {'ids': [self.real_pending.pk]}, format='json').data['approved'], 0)
+        self.assertEqual(self.c.post(f'/services/rejected/{self.real_pending.pk}/').status_code, 403)
+        self.assertNotIn(self.real_pending.pk, [s['id'] for s in self.c.get('/services/?admin_approved=False').data])
+        self.assertEqual(self.c.get('/bookings/stats/').status_code, 200)
+
+    def test_demo_users_read_only_profile_and_no_delete(self):
+        self.demo('E')
+        self.assertEqual(self.c.patch('/profiles/profile/update/', {'phone': '1'}, format='json').status_code, 403)
+        sid = Service.objects.filter(engineer__user__username='demo_engineer').first().pk
+        self.assertEqual(self.c.delete(f'/services/{sid}/').status_code, 403)
+
+    def test_demo_customer_books_demo_only(self):
+        self.real_pending.admin_approved = True; self.real_pending.save()
+        self.demo('C')
+        self.assertEqual(self.c.post('/bookings/', {'service': self.real_pending.pk}).status_code, 403)
+        demo_svc = Service.objects.filter(engineer__user__username='demo_eng_tanvir', admin_approved=True).first()
+        self.assertEqual(self.c.post('/bookings/', {'service': demo_svc.pk}).status_code, 201)
+
+    def test_reserved_username_and_reset_auth(self):
+        r = APIClient().post('/profiles/register/', {'username': 'demo_x', 'first_name': 'a', 'last_name': 'b', 'email': 'q@q.io', 'password': 'Pass12345!', 'confirm_password': 'Pass12345!', 'user_type': 'C'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(APIClient().get('/profiles/demo/reset/').status_code, 403)
