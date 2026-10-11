@@ -16,6 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+
+
+def health(request):
+    return JsonResponse({'status': 'ok', 'service': 'nextechcare-api'})
+
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -27,6 +33,9 @@ urlpatterns = [
     path('reviews/', include('reviews.urls')),
     path('activities/', include('activities.urls')),
     path('contacts/', include('contact.urls')),
+    path('bookings/', include('bookings.urls')),
+    path('triage/', include('triage.urls')),
+    path('health/', health),
 ]
 
 

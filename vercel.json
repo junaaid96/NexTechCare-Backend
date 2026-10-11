@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["sin1"],
+  "functions": {
+    "nextechcare_drf/wsgi.py": { "maxDuration": 30 }
+  }
+}

@@ -18,7 +18,10 @@ class ServiceListCreateView(generics.ListCreateAPIView):
                      'engineer__user__first_name', 'engineer__user__last_name']
 
     def get_queryset(self):
-        queryset = Service.objects.all()
+        queryset = Service.objects.select_related('engineer__user').prefetch_related('reviews', 'customer__user')
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
         engineer = self.request.query_params.get('engineer')
         customer = self.request.query_params.get('customer')
         admin_approved = self.request.query_params.get('admin_approved')
@@ -28,7 +31,7 @@ class ServiceListCreateView(generics.ListCreateAPIView):
         if customer:
             queryset = queryset.filter(customer__user__username=customer)
         if admin_approved:
-            queryset = queryset.filter(admin_approved=admin_approved)
+            queryset = queryset.filter(admin_approved=str(admin_approved).lower() in ('true', '1'))
         return queryset
 
     def get_permissions(self):
@@ -82,6 +85,9 @@ class ServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
         service.price = serializer.validated_data.get('price', service.price)
         service.duration = serializer.validated_data.get(
             'duration', service.duration)
+        for f in ('category', 'sla_hours', 'is_remote'):
+            if f in serializer.validated_data:
+                setattr(service, f, serializer.validated_data[f])
         service.save()
         Activity.objects.create(
             name=f'{engineer.user.first_name} {engineer.user.last_name} updated a service named {service.name}!')
@@ -106,7 +112,9 @@ class ServiceTakenCreateView(generics.CreateAPIView):
     permission_classes = [IsCustomer]
 
     def create(self, request, pk):
-        service = Service.objects.get(pk=pk)
+        service = Service.objects.filter(pk=pk).first()
+        if not service:
+            return Response({'error': 'Service not found!'}, status=status.HTTP_404_NOT_FOUND)
         customer = CustomerProfile.objects.get(user=request.user)
         if service.customer.filter(user=request.user).exists():
             return Response({'error': 'Service already taken!'}, status=status.HTTP_400_BAD_REQUEST)
@@ -129,3 +137,27 @@ class ServiceApprovedCreateView(generics.CreateAPIView):
         Activity.objects.create(
             name=f'{request.user.first_name} {request.user.last_name} approved a service named {service.name}!')
         return Response({'success': 'Service approved successfully!'}, status=status.HTTP_200_OK)
+
+
+class ServiceBulkApproveView(generics.GenericAPIView):
+    permission_classes = [IsCustomAdmin]
+
+    def post(self, request):
+        ids = [int(i) for i in request.data.get('ids', []) if str(i).isdigit()]
+        updated = Service.objects.filter(pk__in=ids, admin_approved=False).update(admin_approved=True)
+        if updated:
+            Activity.objects.create(name=f'{request.user.first_name} {request.user.last_name} approved {updated} services in bulk')
+        return Response({'approved': updated}, status=status.HTTP_200_OK)
+
+
+class ServiceRejectView(generics.GenericAPIView):
+    permission_classes = [IsCustomAdmin]
+
+    def post(self, request, pk):
+        service = Service.objects.filter(pk=pk, admin_approved=False).first()
+        if not service:
+            return Response({'error': 'Pending service not found.'}, status=status.HTTP_404_NOT_FOUND)
+        name = service.name
+        service.delete()
+        Activity.objects.create(name=f'{request.user.first_name} {request.user.last_name} rejected a service named {name}')
+        return Response({'success': 'Service rejected.'}, status=status.HTTP_200_OK)
