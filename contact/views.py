@@ -17,6 +17,12 @@ class ContactTextCreateView(generics.CreateAPIView):
 
 
 class ContactTextListView(generics.ListAPIView):
-    queryset = ContactText.objects.all()
+    def get_queryset(self):
+        from profiles.demo import is_demo
+        qs = ContactText.objects.all()
+        if is_demo(self.request.user):
+            qs = qs.filter(email__endswith='@demo.nextechcare.app')
+        return qs
+
     serializer_class = ContactTextSerializer
     permission_classes = [IsCustomAdmin]

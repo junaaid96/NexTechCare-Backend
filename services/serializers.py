@@ -10,10 +10,14 @@ class ServiceSerializer(serializers.ModelSerializer):
     avg_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
     trust = serializers.SerializerMethodField()
+    is_demo = serializers.SerializerMethodField()
 
     class Meta:
         model = Service
         fields = '__all__'
+
+    def get_is_demo(self, obj):
+        return obj.engineer.user.username.startswith('demo_')
 
     def get_avg_rating(self, obj):
         vals = [r.rating for r in obj.reviews.all()]

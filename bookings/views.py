@@ -14,6 +14,7 @@ from services.models import Service, CATEGORY_CHOICES
 from .models import Booking, BookingEvent, ENGINEER_TRANSITIONS, CUSTOMER_TRANSITIONS
 from .serializers import BookingSerializer, BookingCreateSerializer, StatusUpdateSerializer
 from .trust import trust_breakdown
+from profiles.demo import is_demo, DEMO_PREFIX
 
 
 def _name(u):
@@ -31,6 +32,8 @@ class BookingListCreateView(APIView):
             qs = qs.filter(customer__user=request.user)
         elif t == 'E':
             qs = qs.filter(service__engineer__user=request.user)
+        elif is_demo(request.user):
+            qs = qs.filter(customer__user__username__startswith=DEMO_PREFIX)
         st = request.query_params.get('status')
         if st:
             qs = qs.filter(status=st)
@@ -43,6 +46,10 @@ class BookingListCreateView(APIView):
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
         service = get_object_or_404(Service, pk=d['service'], admin_approved=True)
+        if is_demo(request.user) and not service.engineer.user.username.startswith(DEMO_PREFIX):
+            return Response({'error': 'In the demo you can book services from demo engineers (marked Demo).'}, status=status.HTTP_403_FORBIDDEN)
+        if not is_demo(request.user) and service.engineer.user.username.startswith(DEMO_PREFIX):
+            return Response({'error': 'This is a demo service. Try it with the demo customer account.'}, status=status.HTTP_403_FORBIDDEN)
         customer = CustomerProfile.objects.get(user=request.user)
         if Booking.objects.filter(service=service, customer=customer, status__in=['requested', 'accepted', 'in_progress']).exists():
             return Response({'error': 'You already have an open booking for this service.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -61,6 +68,8 @@ class BookingDetailView(APIView):
     def _get(self, request, pk):
         b = get_object_or_404(Booking.objects.select_related('service__engineer__user', 'customer__user'), pk=pk)
         u = request.user
+        if u.user_type == 'A' and is_demo(u) and not b.customer.user.username.startswith(DEMO_PREFIX):
+            return None
         if u.user_type == 'A' or b.customer.user_id == u.id or b.service.engineer.user_id == u.id:
             return b
         return None
@@ -124,7 +133,18 @@ class AdminStatsView(APIView):
 
     def get(self, request):
         now = timezone.now()
+        demo = is_demo(request.user)
         bookings = Booking.objects.all()
+        engineers_qs = EngineerProfile.objects.select_related('user')
+        services_qs = Service.objects.all()
+        customers_qs = CustomerProfile.objects.all()
+        reviews_qs = Review.objects.all()
+        if demo:  # the demo admin sees demo data only
+            bookings = bookings.filter(customer__user__username__startswith=DEMO_PREFIX)
+            engineers_qs = engineers_qs.filter(user__username__startswith=DEMO_PREFIX)
+            services_qs = services_qs.filter(engineer__user__username__startswith=DEMO_PREFIX)
+            customers_qs = customers_qs.filter(user__username__startswith=DEMO_PREFIX)
+            reviews_qs = reviews_qs.filter(customer__user__username__startswith=DEMO_PREFIX)
         open_q = Q(status__in=['requested', 'accepted', 'in_progress'])
         resolved = bookings.filter(status='resolved').exclude(resolved_at=None)
         res_hours = [(b.resolved_at - b.created_at).total_seconds() / 3600 for b in resolved[:200]]
@@ -133,7 +153,7 @@ class AdminStatsView(APIView):
             day = (now - timezone.timedelta(days=i)).date()
             days.append({'date': day.isoformat(), 'bookings': bookings.filter(created_at__date=day).count()})
         engineers = []
-        for e in EngineerProfile.objects.select_related('user'):
+        for e in engineers_qs:
             open_count = bookings.filter(open_q, service__engineer=e).count()
             engineers.append({'id': e.pk, 'name': _name(e.user), 'open': open_count, **trust_breakdown(e)})
         engineers.sort(key=lambda x: -x['score'])
@@ -143,10 +163,10 @@ class AdminStatsView(APIView):
                 'open_bookings': bookings.filter(open_q).count(),
                 'sla_breaches': sum(1 for b in bookings.filter(open_q) if b.sla_breached),
                 'avg_resolution_hours': round(sum(res_hours) / len(res_hours), 1) if res_hours else None,
-                'pending_approvals': Service.objects.filter(admin_approved=False).count(),
-                'customers': CustomerProfile.objects.count(),
-                'engineers': EngineerProfile.objects.count(),
-                'avg_rating': round(Review.objects.aggregate(a=Avg('rating'))['a'] or 0, 1),
+                'pending_approvals': services_qs.filter(admin_approved=False).count(),
+                'customers': customers_qs.count(),
+                'engineers': engineers_qs.count(),
+                'avg_rating': round(reviews_qs.aggregate(a=Avg('rating'))['a'] or 0, 1),
             },
             'trend': days,
             'by_category': [{'key': k, 'label': v, 'count': by_cat.get(k, 0)} for k, v in CATEGORY_CHOICES],

@@ -37,6 +37,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if user_type not in ['C', 'E']:
             errors['user_type'] = 'User type must be either Customer or Engineer.'
 
+        if str(data.get('username', '')).lower().startswith('demo_'):
+            errors['username'] = 'This username is reserved.'
+
         email = data.get('email')
         if email and User.objects.filter(email=email).exists():
             errors['email'] = 'Email already exists!'

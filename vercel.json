@@ -1,7 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["sin1"],
+  "regions": [
+    "sin1"
+  ],
   "functions": {
-    "nextechcare_drf/wsgi.py": { "maxDuration": 30 }
-  }
+    "nextechcare_drf/wsgi.py": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/profiles/demo/reset/",
+      "schedule": "0 21 * * *"
+    }
+  ]
 }

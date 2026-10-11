@@ -7,6 +7,7 @@ from activities.models import Activity
 from .serializers import ServiceSerializer, ServiceCreateUpdateSerializer
 from profiles.models import EngineerProfile, CustomerProfile
 from rest_framework import filters
+from profiles.demo import is_demo, DEMO_PREFIX
 
 
 # GET and POST requests for the retrieval and creation of Service instances.
@@ -31,7 +32,12 @@ class ServiceListCreateView(generics.ListCreateAPIView):
         if customer:
             queryset = queryset.filter(customer__user__username=customer)
         if admin_approved:
-            queryset = queryset.filter(admin_approved=str(admin_approved).lower() in ('true', '1'))
+            approved = str(admin_approved).lower() in ('true', '1')
+            queryset = queryset.filter(admin_approved=approved)
+            if not approved and not (self.request.user.is_authenticated and self.request.user.user_type == 'A' and not is_demo(self.request.user)):
+                # Pending services are visible to real admins; demo admin and others only see demo ones.
+                if is_demo(self.request.user):
+                    queryset = queryset.filter(engineer__user__username__startswith=DEMO_PREFIX)
         return queryset
 
     def get_permissions(self):
@@ -94,6 +100,8 @@ class ServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Response(ServiceSerializer(service).data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
+        if is_demo(request.user):
+            return Response({'error': 'Deleting services is disabled in the demo.'}, status=status.HTTP_403_FORBIDDEN)
         service = self.get_object()
         engineer = EngineerProfile.objects.get(user=request.user)
 
@@ -132,6 +140,8 @@ class ServiceApprovedCreateView(generics.CreateAPIView):
 
     def create(self, request, pk):
         service = Service.objects.get(pk=pk)
+        if is_demo(request.user) and not service.engineer.user.username.startswith(DEMO_PREFIX):
+            return Response({'error': 'The demo admin can only approve demo services.'}, status=status.HTTP_403_FORBIDDEN)
         service.admin_approved = True
         service.save()
         Activity.objects.create(
@@ -144,7 +154,10 @@ class ServiceBulkApproveView(generics.GenericAPIView):
 
     def post(self, request):
         ids = [int(i) for i in request.data.get('ids', []) if str(i).isdigit()]
-        updated = Service.objects.filter(pk__in=ids, admin_approved=False).update(admin_approved=True)
+        qs = Service.objects.filter(pk__in=ids, admin_approved=False)
+        if is_demo(request.user):
+            qs = qs.filter(engineer__user__username__startswith=DEMO_PREFIX)
+        updated = qs.update(admin_approved=True)
         if updated:
             Activity.objects.create(name=f'{request.user.first_name} {request.user.last_name} approved {updated} services in bulk')
         return Response({'approved': updated}, status=status.HTTP_200_OK)
@@ -154,6 +167,8 @@ class ServiceRejectView(generics.GenericAPIView):
     permission_classes = [IsCustomAdmin]
 
     def post(self, request, pk):
+        if is_demo(request.user):
+            return Response({'error': 'Rejecting (deleting) services is disabled in the demo.'}, status=status.HTTP_403_FORBIDDEN)
         service = Service.objects.filter(pk=pk, admin_approved=False).first()
         if not service:
             return Response({'error': 'Pending service not found.'}, status=status.HTTP_404_NOT_FOUND)
