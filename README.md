@@ -136,3 +136,22 @@ Authorization: Bearer <your_access_token>
 3. Commit your changes
 4. Push to the branch
 5. Create a new Pull Request
+
+## 2026 reimagine (CodeJBorg)
+
+Live API: https://nextechcare-backend.vercel.app (Vercel, Python runtime) · DB: Neon Postgres
+
+New: technology-support categories, booking tracker with SLA timeline (`/bookings/`), engineer Trust Score, AI Issue Triage (`/triage/`, Groq with rule-based fallback), admin stats (`/bookings/stats/`), bulk approve, engineer verification, `/health/`.
+
+### Local
+```bash
+cp .env.example .env   # leave DATABASE_URL empty for SQLite
+python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+python manage.py migrate && python manage.py runserver   # http://localhost:8000
+python manage.py test
+```
+Migrations against Neon use the direct URL: `USE_UNPOOLED_DB=1 python manage.py migrate`.
+
+Env vars (names): `SECRET_KEY`, `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `DEBUG`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `GROQ_API_KEY`, `GROQ_MODEL`.
+
+Crafted by [CodeJBorg](https://junaidul.pro.bd/codejborg).

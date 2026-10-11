@@ -80,7 +80,6 @@ class UserLoginView(generics.CreateAPIView):
             user = authenticate(username=username, password=password)
 
             if user is not None:
-                login(request, user)
                 refresh = RefreshToken.for_user(user)
                 access = AccessToken.for_user(user)
                 return Response({'refresh': str(refresh), 'access': str(access), 'user_id': user.id, 'user_type': user.user_type}, status=status.HTTP_200_OK)
@@ -93,5 +92,16 @@ class UserLogoutView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        logout(request)
         return Response({'success': 'Logout successful!'}, status=status.HTTP_200_OK)
+
+
+class EngineerVerifyView(generics.GenericAPIView):
+    permission_classes = [IsCustomAdmin]
+
+    def post(self, request, pk):
+        eng = EngineerProfile.objects.filter(pk=pk).first()
+        if not eng:
+            return Response({'error': 'Engineer not found.'}, status=status.HTTP_404_NOT_FOUND)
+        eng.verified = not eng.verified
+        eng.save(update_fields=['verified'])
+        return Response({'verified': eng.verified}, status=status.HTTP_200_OK)

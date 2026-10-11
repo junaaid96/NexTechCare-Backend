@@ -19,6 +19,7 @@ class AdminProfile(models.Model):
     address = models.TextField(blank=True)
     task = models.CharField(max_length=100, blank=True)
     image = models.ImageField(upload_to='profile_pics', default='default.jpg')
+    avatar_url = models.URLField(blank=True)
 
     def __str__(self):
         return f'Admin - {self.user.first_name} {self.user.last_name}'
@@ -35,6 +36,7 @@ class CustomerProfile(models.Model):
     address = models.TextField(blank=True)
     occupation = models.CharField(max_length=100, blank=True)
     image = models.ImageField(upload_to='profile_pics', default='default.jpg')
+    avatar_url = models.URLField(blank=True)
 
     def __str__(self):
         return f'Customer - {self.user.first_name} {self.user.last_name}'
@@ -46,7 +48,9 @@ class EngineerProfile(models.Model):
     address = models.TextField(blank=True)
     skills = models.TextField(blank=True)
     experience = models.TextField(blank=True)
+    verified = models.BooleanField(default=False)
     image = models.ImageField(upload_to='profile_pics', default='default.jpg')
+    avatar_url = models.URLField(blank=True)
 
     def __str__(self):
         return f'Engineer - {self.user.first_name} {self.user.last_name}'

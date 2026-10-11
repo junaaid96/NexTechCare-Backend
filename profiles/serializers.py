@@ -73,7 +73,7 @@ class AdminProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AdminProfile
-        fields = ['user', 'phone', 'address', 'task', 'image']
+        fields = ['id', 'user', 'phone', 'address', 'task', 'image', 'avatar_url']
 
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
@@ -81,13 +81,13 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomerProfile
-        fields = ['user', 'phone', 'address', 'occupation', 'image']
+        fields = ['id', 'user', 'phone', 'address', 'occupation', 'image', 'avatar_url']
 
 
 class CustomerProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerProfile
-        fields = ['phone', 'address', 'occupation', 'image']
+        fields = ['phone', 'address', 'occupation', 'image', 'avatar_url']
 
     def update(self, instance, validated_data):
         instance.phone = validated_data.get('phone', instance.phone)
@@ -95,6 +95,7 @@ class CustomerProfileUpdateSerializer(serializers.ModelSerializer):
         instance.occupation = validated_data.get(
             'occupation', instance.occupation)
         instance.image = validated_data.get('image', instance.image)
+        instance.avatar_url = validated_data.get('avatar_url', instance.avatar_url)
         instance.save()
         return instance
 
@@ -104,13 +105,13 @@ class EngineerProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EngineerProfile
-        fields = ['user', 'phone', 'address', 'skills', 'experience', 'image']
+        fields = ['id', 'user', 'phone', 'address', 'skills', 'experience', 'image', 'avatar_url', 'verified']
 
 
 class EngineerProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = EngineerProfile
-        fields = ['phone', 'address', 'skills', 'experience', 'image']
+        fields = ['phone', 'address', 'skills', 'experience', 'image', 'avatar_url']
 
     def update(self, instance, validated_data):
         instance.phone = validated_data.get('phone', instance.phone)
@@ -119,6 +120,7 @@ class EngineerProfileUpdateSerializer(serializers.ModelSerializer):
         instance.experience = validated_data.get(
             'experience', instance.experience)
         instance.image = validated_data.get('image', instance.image)
+        instance.avatar_url = validated_data.get('avatar_url', instance.avatar_url)
         instance.save()
         return instance
 

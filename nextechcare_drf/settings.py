@@ -1,3 +1,4 @@
+import os
 """
 Django settings for nextechcare_drf project.
 
@@ -16,7 +17,7 @@ import environ
 import dj_database_url
 
 env = environ.Env()
-environ.Env.read_env()
+environ.Env.read_env(os.path.join(Path(__file__).resolve().parent.parent, '.env'))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,12 +30,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://nextechcare-backend.onrender.com', 'https://*.127.0.0.1']
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
+    'https://*.vercel.app', 'https://nextechcare-backend.onrender.com', 'http://localhost:8000'])
 
 # Application definition
 
@@ -53,29 +54,34 @@ INSTALLED_APPS = [
     'services',
     'reviews',
     'activities',
-    'contact'
+    'contact',
+    'bookings',
+    'triage',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    # "whitenoise.middleware.WhiteNoiseMiddleware",  # for railway deployment
 ]
 
 ROOT_URLCONF = 'nextechcare_drf.urls'
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOWED_ORIGIN_REGEXES = [r'^http://localhost:\d+$', r'^http://127\.0\.0\.1:\d+$', r'^https://.*nextechcare.*\.netlify\.app$']
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_THROTTLE_RATES': {'triage': '20/hour'},
 }
 
 AUTH_USER_MODEL = 'profiles.User'
@@ -109,15 +115,18 @@ WSGI_APPLICATION = 'nextechcare_drf.wsgi.application'
 #     }
 # }
 
-# railway postgreSQL DB
-db_user = env('DB_USER')
-db_pass = env('DB_PASS')
-
+# Neon Postgres. DATABASE_URL = pooled (runtime); DATABASE_URL_UNPOOLED = direct (migrations).
+# Falls back to local SQLite when no DATABASE_URL is set (local dev / tests).
+_db_url = env('DATABASE_URL', default='')
+if os.environ.get('USE_UNPOOLED_DB') and env('DATABASE_URL_UNPOOLED', default=''):
+    _db_url = env('DATABASE_URL_UNPOOLED')
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"postgresql://{db_user}:{db_pass}@ep-damp-butterfly-a1x2ao8a-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
-    )
+    'default': dj_database_url.parse(_db_url, conn_max_age=0, conn_health_checks=True)
+    if _db_url else {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}
 }
+
+GROQ_API_KEY = env('GROQ_API_KEY', default='')
+GROQ_MODEL = env('GROQ_MODEL', default='openai/gpt-oss-120b')
 
 
 # Password validation
@@ -161,11 +170,11 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # for railway deployment
-# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {"default": {"BACKEND": "django.core.files.storage.FileSystemStorage"}, "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"}}
 
 # media files
 MEDIA_URL = '/media/'
-# MEDIA_ROOT = BASE_DIR / 'media/'
+MEDIA_ROOT = env('MEDIA_ROOT', default='/tmp/media' if os.environ.get('VERCEL') else str(BASE_DIR / 'media'))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -212,3 +221,7 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_CONTENT_TYPE_NOSNIFF = True

@@ -13,4 +13,5 @@ urlpatterns = [
 
     path('customers/', views.CustomersListView.as_view(), name='customers'),
     path('engineers/', views.EngineersListView.as_view(), name='engineers'),
+    path('engineers/<int:pk>/verify/', views.EngineerVerifyView.as_view(), name='engineer-verify'),
 ]
